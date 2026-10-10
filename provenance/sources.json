@@ -1,0 +1,20 @@
+{
+  "luis_starter.txt": {
+    "original_git_commit": "a673d54",
+    "archived_sha256": "60b2bfe232be8626c345fd00a86a092e7127fdfaccadd195f83fcaf0e03b6969",
+    "role": "Historical measurement source; not the unified executable",
+    "modifications": "Comments removed; starter sizes restored for luis_starter only"
+  },
+  "luis_umbral.txt": {
+    "original_git_commit": "a673d54",
+    "archived_sha256": "dd62c05c6730ace9d596c8b0d42e4f304442902bd9c36361de011752f477df36",
+    "role": "Historical measurement source; not the unified executable",
+    "modifications": "Comments removed; starter sizes restored for luis_starter only"
+  },
+  "luis_reto.txt": {
+    "original_git_commit": "a673d54",
+    "archived_sha256": "d8275f17e0b70ca6b232614414fcc5dcc624a4faefe61289d94fd0fdc5829874",
+    "role": "Historical measurement source; not the unified executable",
+    "modifications": "Comments removed; starter sizes restored for luis_starter only"
+  }
+}

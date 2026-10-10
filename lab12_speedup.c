@@ -6,6 +6,13 @@
 #include <errno.h>
 #include <limits.h>
 #include <math.h>
+#ifdef _WIN32
+#include <malloc.h>
+#endif
+
+#ifndef LAB12_SUM_VARIANT
+#define LAB12_SUM_VARIANT 0
+#endif
 
 #define ITERS 1000 
 #define REPS 5
@@ -26,6 +33,34 @@ static double mediana(const double *v) {
 static double checksum = 0.0; 
 static volatile double semilla = 1.2345; 
 static double referencia = 0.0;
+
+#if LAB12_SUM_VARIANT == 2
+typedef double v4d __attribute__((vector_size(32)));
+__attribute__((target("avx2"))) static double sumar_rapido(const double *a, long n) {
+    v4d s0 = {0}, s1 = {0}, s2 = {0}, s3 = {0};
+    long i = 0;
+    for (; i + 16 <= n; i += 16) {
+        s0 += *(const v4d *)(a + i);
+        s1 += *(const v4d *)(a + i + 4);
+        s2 += *(const v4d *)(a + i + 8);
+        s3 += *(const v4d *)(a + i + 12);
+    }
+    v4d t = (s0 + s1) + (s2 + s3);
+    double s = t[0] + t[1] + t[2] + t[3];
+    for (; i < n; i++) s += a[i];
+    return s;
+}
+#endif
+
+static double sumar(const double *a, long n) {
+#if LAB12_SUM_VARIANT == 2
+    return sumar_rapido(a, n);
+#else
+    double s = 0;
+    for (long i = 0; i < n; i++) s += a[i];
+    return s;
+#endif
+}
 
 static long entero(const char *texto) {
     char *fin;
@@ -140,18 +175,36 @@ static void exp_amdahl(long W, double fp, int pmax) {
 }
 
 static void exp_suma(int pmax) {
+#if LAB12_SUM_VARIANT == 1
+    long tamanos[] = {1024, 2048, 4096, 8192, 16384, 32768, 65536};
+#elif LAB12_SUM_VARIANT == 2
+    if (!__builtin_cpu_supports("avx2")) {
+        fprintf(stderr, "AVX2 no disponible\n");
+        exit(1);
+    }
+    long tamanos[] = {131072, 262144, 524288, 1048576, 2097152, 4194304};
+#else
     long tamanos[] = {16, 1024, 65536, 1048576, 16777216};
+#endif
     int nt = sizeof(tamanos) / sizeof(tamanos[0]);
     long nmax = tamanos[nt - 1];
-    double *a = malloc(nmax * sizeof(double));
+#ifdef _WIN32
+    double *a = _aligned_malloc(nmax * sizeof(double), 64);
+#else
+    double *a = aligned_alloc(64, nmax * sizeof(double));
+#endif
     if (!a) { fprintf(stderr, "sin memoria\n"); exit(1); }
     for (long i = 0; i < nmax; i++) a[i] = 1.0 / (double)(i + 1);
 
     int ps[64], nps = 0;
-    for (int p = 1; p <= pmax; p *= 2) ps[nps++] = p;
+    for (int p = 1; p <= pmax;) {
+        ps[nps++] = p;
+        if (p > pmax / 2) break;
+        p *= 2;
+    }
     if (ps[nps - 1] != pmax) ps[nps++] = pmax;
 
-    { double s = 0.0; for (long i = 0; i < nmax; i++) s += a[i]; checksum += s; } 
+    checksum += sumar(a, nmax);
 
     for (int k = 0; k < nt; k++) {
         long n = tamanos[k];
@@ -163,8 +216,7 @@ static void exp_suma(int pmax) {
         for (int rep = 0; rep < REPS; rep++) {
             double t0 = omp_get_wtime();
             for (long r = 0; r < R; r++) {
-                double s = 0.0;
-                for (long i = 0; i < n; i++) s += a[i];
+                double s = sumar(a, n);
                 checksum += s;
                 BARRERA();
             }
@@ -179,8 +231,16 @@ static void exp_suma(int pmax) {
                     double s = 0.0;
 #pragma omp parallel num_threads(p) reduction(+ : s)
                     {
+#if LAB12_SUM_VARIANT == 2
+                        int id = omp_get_thread_num(), nh = omp_get_num_threads();
+                        long bloques = n / 16;
+                        long ini = (bloques * id / nh) * 16;
+                        long fin = id == nh - 1 ? n : (bloques * (id + 1) / nh) * 16;
+                        s += sumar(a + ini, fin - ini);
+#else
 #pragma omp for schedule(static) nowait
                         for (long i = 0; i < n; i++) s += a[i];
+#endif
 #pragma omp barrier
                     }
                     checksum += s;
@@ -193,7 +253,11 @@ static void exp_suma(int pmax) {
             fflush(stdout);
         }
     }
+#ifdef _WIN32
+    _aligned_free(a);
+#else
     free(a);
+#endif
 }
 
 static inline int costo(long i, long W) { return 1 + (int)((2.0 * ITERS * i) / W); }
