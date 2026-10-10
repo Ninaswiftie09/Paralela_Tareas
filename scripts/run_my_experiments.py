@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 
 ROOT = Path(__file__).resolve().parents[1]
 BUILD = ROOT / 'build'
-RESULTS = ROOT / 'results'
+RESULTS = ROOT / 'build/reproduced'
 BUILD.mkdir(exist_ok=True)
 RESULTS.mkdir(exist_ok=True)
 exe = BUILD / ('lab12.exe' if os.name == 'nt' else 'lab12')
