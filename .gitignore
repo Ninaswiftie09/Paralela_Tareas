@@ -1,5 +1,4 @@
 build/
-*.aux
-*.log
-*.out
+private/
+*.exe
 __pycache__/
