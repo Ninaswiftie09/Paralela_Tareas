@@ -2,3 +2,5 @@ build/
 private/
 *.exe
 __pycache__/
+/lab12
+resultados_lab12.zip
