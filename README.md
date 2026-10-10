@@ -42,10 +42,4 @@ Se usa omp_get_wtime. El tiempo incluye las reservas de fuerzas y la región par
 
 Los resultados guardan hilos solicitados y reales, procesadores disponibles y máximo de hilos informado por OpenMP. Speedup usa siempre el promedio secuencial; eficiencia divide el speedup entre los hilos reales. Las pequeñas diferencias de la optimizada provienen del orden de suma de punto flotante. El scheduling dinámico puede cambiar ese orden entre ejecuciones.
 
-## Evidencia
-
-evidence contiene los registros originales de compilación y ejecución en archivos txt y su representación en PNG. Las imágenes se generan a partir de las salidas reales sin editar los valores. Son imágenes de registros, no capturas del escritorio: el entorno de ejecución no dispone de acceso a la pantalla. La compilación se registra con sus comandos y códigos de salida. sequential, parallel y optimized corresponden a la primera repetición de sus configuraciones en results.csv. hardware conserva la salida optimizada con la información OpenMP.
-
-El informe en LaTeX se encuentra en informe.tex en la raíz y está excluido de Git. La portada acepta logo.png si está disponible. El PDF compilado se entrega como report.pdf.
-
 Repositorio: https://github.com/Ninaswiftie09/Paralela_Tareas/tree/Laboratorio_PCAM_OpenMP_NBody
