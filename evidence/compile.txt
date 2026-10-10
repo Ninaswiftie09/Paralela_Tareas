@@ -1,0 +1,9 @@
+$ g++ -O2 -std=c++17 -fopenmp -Wall -Wextra -pedantic src/nbody_seq.cpp -o build/nbody_seq.exe
+
+Exit code: 0
+$ g++ -O2 -std=c++17 -fopenmp -Wall -Wextra -pedantic src/nbody_parallel.cpp -o build/nbody_parallel.exe
+
+Exit code: 0
+$ g++ -O2 -std=c++17 -fopenmp -Wall -Wextra -pedantic src/nbody_optimized.cpp -o build/nbody_optimized.exe
+
+Exit code: 0
