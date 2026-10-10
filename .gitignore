@@ -1,6 +1,4 @@
 build/
-informe.tex
-informe.pdf
 *.aux
 *.log
 *.out
