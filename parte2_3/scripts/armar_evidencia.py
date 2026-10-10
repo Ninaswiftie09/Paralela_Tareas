@@ -1,11 +1,19 @@
 
 
 from PIL import Image ,ImageDraw ,ImageFont 
+from pathlib import Path
+import os
+
+BASE = Path(__file__).resolve().parents[1]
+os.chdir(BASE)
 
 PAGINA =(1240 ,1754 )
 MARGEN =70 
 FUENTE ="/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 FUENTE_B ="/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+if os.name == 'nt':
+    FUENTE = 'C:/Windows/Fonts/arial.ttf'
+    FUENTE_B = 'C:/Windows/Fonts/arialbd.ttf'
 
 secciones =[
 ("Datos del equipo (WSL2: lscpu)","evidencia/01_lscpu.png",
