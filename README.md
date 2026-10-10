@@ -1,45 +1,67 @@
-# PCAM y OpenMP: simulación N-Body
+# Lab 12: speedup y eficiencia
 
-Nina Nájera Marakovits, 231088.
+El programa base contiene los cuatro experimentos de la guía en C con OpenMP. Se prepararon las partes 1 y 4 para Nina: Amdahl con problema fijo y Gustafson con problema creciente. Las partes 2 y 3 corresponden a la otra mitad: granularidad de sumas y desbalance de carga. El reporte y la síntesis final se integran después con los datos de ambos integrantes.
 
-Se simula gravedad en dos dimensiones con semilla 42, integración Euler semiimplícita, paso temporal 0.001, constante gravitacional 0.001 y suavizado cuadrático 0.0001. Las masas se generan entre 1 y 2 y las posiciones entre -1 y 1. La versión secuencial y la directa calculan N por N interacciones. La optimizada calcula cada pareja una sola vez.
+## Compilar
 
-## Compilación y ejecución
-
-Se requiere C++17, GCC con OpenMP y Python 3 para automatizar experimentos.
+En Linux o WSL:
 
 ```sh
-g++ -O2 -std=c++17 -fopenmp src/nbody_seq.cpp -o build/nbody_seq
-g++ -O2 -std=c++17 -fopenmp src/nbody_parallel.cpp -o build/nbody_parallel
-g++ -O2 -std=c++17 -fopenmp src/nbody_optimized.cpp -o build/nbody_optimized
-./build/nbody_parallel --n 5000 --steps 10 --threads 8 --schedule dynamic --chunk 64
+make
+./lab12
 ```
 
-Crear primero la carpeta build. En Windows se puede añadir .exe a los ejecutables. Chunk 0 solicita el valor predeterminado del runtime. Para static significa bloques contiguos sin tamaño explícito; para dynamic y guided el mínimo predeterminado es 1.
+En Windows con GCC y OpenMP:
+
+```powershell
+mingw32-make
+./lab12.exe
+```
+
+La ejecución sin argumentos muestra el uso y devuelve código 1. En macOS se puede usar `make CC=gcc-14` o `make CC=clang` con libomp instalado. Se requiere Python 3 y matplotlib para las gráficas.
+
+## Ejecutar las partes 1 y 4
 
 ```sh
-python scripts/benchmark.py
-python scripts/check.py
-python scripts/render_evidence.py
+python scripts/run_my_experiments.py
+python scripts/check_results.py
+python scripts/analyze_models.py
 ```
 
-El benchmark compila, ejecuta 63 mediciones y escribe results.csv con cada repetición y summary.csv con promedios, speedup y eficiencia. Mantiene N=5000, pasos=10 y tres repeticiones para cada configuración. Incluye las nueve configuraciones obligatorias en ambas versiones paralelas y añade chunk 32 para comparar tres tamaños explícitos. Las ejecuciones se realizan una después de otra.
+En Linux se puede sustituir python por python3. El primer comando compila con O2, ejecuta las cinco fracciones de Amdahl con W=400000 y Gustafson con 100000 unidades paralelas por hilo y 20000 unidades secuenciales. Se prueban de 1 a 8 hilos. Cada tiempo se mide cinco veces con omp_get_wtime y se toma la mediana. La fracción secuencial dentro del tiempo paralelo corresponde a la misma repetición que produjo la mediana total.
 
-## Diseño PCAM
+La salida estándar conserva las siete columnas originales. Los registros log guardan las cinco muestras y sus resultados numéricos sin mezclarlas con el CSV. Se comprueba que el resultado paralelo coincide con la referencia sin OpenMP dentro de una tolerancia relativa de 1e-10 y que el número real de hilos coincide con el solicitado en Amdahl y Gustafson. Las comprobaciones numéricas y la escritura de muestras quedan fuera del intervalo medido. La comprobación del número de hilos forma parte de la llamada paralela medida.
 
-- Partición: en la directa cada cuerpo es una tarea que lee las posiciones de todos los demás. En la optimizada cada fila del triángulo superior agrupa parejas; su trabajo disminuye al aumentar el índice.
-- Comunicación: se comparten posiciones y masas en lectura. Cada hilo escribe sus propias fuerzas en la directa. La optimizada usa un vector privado de fuerzas por hilo y combina los vectores en orden de índice de hilo.
-- Aglomeración: se agrupan cuerpos con chunks 8, 32 y 64 para medir el costo de asignación frente al balance de carga.
-- Mapeo: schedule runtime permite comparar static, dynamic y guided con los mismos datos y el mismo cálculo.
+La referencia secuencial no contiene pragmas OpenMP. La versión paralela usa reduction, ciclos con nowait y barreras explícitas antes del cierre de cada región. OpenMP exige sincronizar al cerrar una región paralela; esa sincronización de cierre no se puede quitar. El experimento de suma conserva la creación y cierre de la región en cada suma para poder medir ese costo.
 
-Todos los ciclos de distribución OpenMP llevan nowait. Las barreras explícitas separan lectura de posiciones, combinación de fuerzas y actualización. La región paralela persiste durante todos los pasos. OpenMP exige una sincronización al finalizar la región paralela; no existe nowait para eliminarla. La última fase ya termina con una barrera explícita y no depende de esa sincronización obligatoria de cierre.
+Los archivos generados quedan en results. Los seis CSV originales son amdahl_fp100.csv, amdahl_fp95.csv, amdahl_fp90.csv, amdahl_fp75.csv, amdahl_fp50.csv y gustafson.csv. Los CSV con S, E, C y F usan el tiempo secuencial puro como referencia. Los archivos amdahl_summary.csv, amdahl_models.csv y gustafson_models.csv añaden las tablas y comparaciones de modelos. samples.csv conserva las muestras originales que se comprobaron contra cada mediana.
 
-La versión optimizada evita carreras con acumuladores privados y utiliza memoria adicional proporcional a N por hilos. No usa atomic ni critical. Una barrera impide combinar fuerzas antes de terminar todas las parejas. Otra impide modificar posiciones mientras todavía se leen. La combinación se hace por cuerpo, con un solo escritor para cada resultado.
+Las gráficas disponibles son amdahl_speedup.png, amdahl_eficiencia.png, amdahl_modelo.png, gustafson_speedup.png, gustafson_eficiencia.png y gustafson_modelo.png. Los modelos son referencias ideales y no ajustes a los datos. El modelo escalado usa la fracción secuencial medida dentro de Tp, por lo que puede diferir del speedup medido cuando la velocidad efectiva de los hilos cambia.
 
-## Medición y corrección
+## Comandos de la otra mitad
 
-Se usa omp_get_wtime. El tiempo incluye las reservas de fuerzas y la región paralela; excluye generar entradas, imprimir y ejecutar la referencia secuencial de validación. El checksum pondera posiciones y velocidades por el índice del cuerpo. La diferencia máxima compara las cuatro componentes del estado con la referencia, fuera del intervalo medido. Una diferencia mayor que 1e-9 devuelve código 2. Entradas inválidas devuelven código 1.
+Antes de ejecutar cada experimento se deben registrar sus predicciones. En Linux o WSL:
 
-Los resultados guardan hilos solicitados y reales, procesadores disponibles y máximo de hilos informado por OpenMP. Speedup usa siempre el promedio secuencial; eficiencia divide el speedup entre los hilos reales. Las pequeñas diferencias de la optimizada provienen del orden de suma de punto flotante. El scheduling dinámico puede cambiar ese orden entre ejecuciones.
+```sh
+./lab12 suma > suma.csv
+./lab12 desbalance static > desb_static.csv
+./lab12 desbalance dynamic > desb_dynamic.csv
+./lab12 desbalance guided > desb_guided.csv
+python3 graficar.py suma.csv 'desb_*.csv'
+```
 
-Repositorio: https://github.com/Ninaswiftie09/Paralela_Tareas/tree/Laboratorio_PCAM_OpenMP_NBody
+En Windows, cambiar el ejecutable a lab12.exe y usar python. Conviene usar `cmd /c` para redirigir si la versión de PowerShell escribe archivos con una codificación distinta de UTF-8. El graficador reconoce comodines y también CSV UTF-8 con BOM.
+
+## Validar y medir
+
+```sh
+python scripts/check_program.py
+```
+
+La prueba verifica entradas inválidas, casos pequeños, fracciones extremas y los tres schedules de desbalance. No sustituye las corridas completas de las partes 2 y 3.
+
+El equipo usado tiene un Intel Core i7-1165G7, 4 núcleos físicos, 8 procesadores lógicos y Hyper-Threading. No tiene núcleos de rendimiento y eficiencia separados. Los datos se guardan en hardware.json y environment.json. Se comprobó que estaba conectado a corriente antes de iniciar las corridas. La afinidad, la frecuencia, la temperatura y las aplicaciones de fondo no se controlaron. El entorno fue Windows nativo con TDM GCC 10.3.0. La guía sugiere WSL en Windows; solo estaba instalada la distribución de Docker y no se utilizó como entorno de medición.
+
+Para repetir con mayor control, conectar la laptop a corriente, cerrar las aplicaciones y evitar usarla mientras corre. No ejecutar las pruebas al mismo tiempo que los experimentos. El tiempo medido en esta instalación de OpenMP tiene resolución aproximada de milisegundos; los problemas completos duran lo suficiente para obtener tiempos positivos, pero no conviene interpretar diferencias de una milésima como una mejora segura.
+
+Falta ejecutar las partes 2 y 3, integrar los datos y gráficas de ambos integrantes, elaborar el reporte con respuestas numeradas y dos cálculos manuales, y preparar el ZIP final. El reto de speedup superlineal es opcional y no se ejecutó.

@@ -4,6 +4,8 @@
   "logical_processors": 8,
   "smt": "Intel Hyper-Threading, two logical processors per physical core",
   "hybrid_performance_efficiency_cores": false,
+  "ac_power_before_experiments": true,
+  "battery_percent_before_experiments": 100,
   "source": "Win32_Processor queried before experiments",
   "wsl_available_distributions": ["docker-desktop"],
   "measurement_environment": "Native Windows with TDM GCC 10.3.0 and OpenMP",

@@ -1,0 +1,12 @@
+{
+  "timestamp_utc": "2026-10-10T17:39:55.755327+00:00",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "cpu_identifier": "Intel64 Family 6 Model 140 Stepping 1, GenuineIntel",
+  "logical_processors": 8,
+  "requested_pmax": 8,
+  "compiler": "gcc (tdm64-1) 10.3.0",
+  "repetitions": 5,
+  "statistic": "median",
+  "execution_environment": "native Windows GCC",
+  "power_and_background_activity": "not controlled by runner"
+}

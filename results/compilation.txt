@@ -1,0 +1,2 @@
+gcc -O2 -std=c11 -Wall -Wextra -Werror -fopenmp lab12_speedup.c -o C:\Users\ninan\OneDrive\Documentos\Escritorio\UVG\VIII SEMESTRE\Computación Paralela\Paralela_Tareas\build\lab12.exe -lm
+Exit code: 0
