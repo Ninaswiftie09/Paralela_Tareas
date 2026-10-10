@@ -1,0 +1,7 @@
+build/
+informe.tex
+informe.pdf
+*.aux
+*.log
+*.out
+__pycache__/
