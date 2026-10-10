@@ -1,6 +1,8 @@
 
 import csv
 import sys
+import glob
+import math
 from collections import defaultdict
 
 import matplotlib
@@ -12,12 +14,14 @@ import matplotlib.pyplot as plt
 def leer(archivos):
     filas = []
     for a in archivos:
-        with open(a, newline="") as f:
+        with open(a, newline="", encoding="utf-8-sig") as f:
             for r in csv.DictReader(f):
                 r["N"] = int(r["N"])
                 r["p"] = int(r["p"])
                 for k in ("t_seq", "t_par", "t_parte_seq"):
                     r[k] = float(r[k])
+                if r['p'] < 1 or any(not math.isfinite(r[k]) for k in ('t_seq', 't_par', 't_parte_seq')) or r['t_seq'] <= 0 or r['t_par'] <= 0:
+                    raise ValueError('Medicion invalida en ' + a)
                 r["S"] = r["t_seq"] / r["t_par"]
                 r["E"] = r["S"] / r["p"]
                 r["C"] = r["p"] * r["t_par"]
@@ -32,8 +36,8 @@ def guardar_csv(modo, filas):
         w = csv.DictWriter(f, fieldnames=cols, extrasaction="ignore")
         w.writeheader()
         for r in filas:
-            w.writerow({**r, "S": f"{r['S']:.3f}", "E": f"{r['E']:.3f}",
-                        "C": f"{r['C']:.6g}", "F": f"{r['F']:.4g}"})
+            w.writerow({**r, "S": f"{r['S']:.12g}", "E": f"{r['E']:.12g}",
+                        "C": f"{r['C']:.12g}", "F": f"{r['F']:.12g}"})
 
 
 def graficar_por_p(modo, filas, titulo_extra=""):
@@ -89,7 +93,13 @@ def main():
     if len(sys.argv) < 2:
         print("Uso: python graficar.py archivo.csv [archivo.csv ...]")
         sys.exit(1)
-    filas = leer(sys.argv[1:])
+    archivos = []
+    for pattern in sys.argv[1:]:
+        matches = sorted(glob.glob(pattern))
+        if not matches:
+            raise FileNotFoundError(pattern)
+        archivos.extend(matches)
+    filas = leer(list(dict.fromkeys(archivos)))
     por_modo = defaultdict(list)
     for r in filas:
         por_modo[r["modo"]].append(r)

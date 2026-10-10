@@ -1,0 +1,11 @@
+{
+  "cpu_model": "11th Gen Intel Core i7-1165G7 @ 2.80GHz",
+  "physical_cores": 4,
+  "logical_processors": 8,
+  "smt": "Intel Hyper-Threading, two logical processors per physical core",
+  "hybrid_performance_efficiency_cores": false,
+  "source": "Win32_Processor queried before experiments",
+  "wsl_available_distributions": ["docker-desktop"],
+  "measurement_environment": "Native Windows with TDM GCC 10.3.0 and OpenMP",
+  "guide_environment_difference": "The guide suggests WSL on Windows; a general-purpose WSL distribution was not installed"
+}
