@@ -1,61 +1,48 @@
-# Lab 12: speedup y eficiencia
+# Laboratorio 12: speedup y eficiencia
 
-## Integrantes:
-    - Nina Nájera Marakovits - 231088
-    - Luis Palacios
+## Integrantes
 
-## Reparto
+Nina Nájera Marakovits y Luis Palacios.
 
-| Parte | Quién | Equipo | Dónde |
-|---|---|---|---|
-| 1 — Amdahl | Nina | i7-1165G7 (4 núcleos / 8 hilos, sin P/E), Windows nativo, TDM-GCC 10.3, pmax = 8 | `results/amdahl_*`, `scripts/` |
-| 2 — Ts honesto y granularidad | Luis | i5-12450H (4P + 4E / 12 hilos), WSL2 Ubuntu, gcc 13.3, pmax = 12 | `results/suma*`, `parte2_3/` |
-| 3 — Desbalance | Luis | i5-12450H | `results/desb*`, `parte2_3/` |
-| 4 — Gustafson | Nina | i7-1165G7 | `results/gustafson*`, `scripts/` |
-| Reto (S > p) | Luis | i5-12450H | `parte2_3/reto/` |
+## Organización
 
-## Estructura
+La implementación compartida está en lab12_speedup.c. Las variantes de umbral y reto incluyen esa implementación y solo seleccionan los tamaños y la suma AVX2. Los ciclos distribuidos llevan nowait y barreras explícitas. OpenMP conserva la sincronización obligatoria al cerrar cada región paralela. No se utiliza una barrera implícita de ciclo para resolver las dependencias.
 
-    lab12_speedup.c, Makefile, graficar.py   código (versión modificada en las Partes 1 y 4)
-    scripts/                                  corridas y validación de las Partes 1 y 4 + armar_resultados_zip.py
-    results/                                  los 10 CSV oficiales, los *_con_S_E.csv y las 7 gráficas
-    parte2_3/                                 predicciones, respuestas, evidencia, extras y reto de las Partes 2 y 3
+Los resultados originales se conservan en results y parte2_3. Nina midió Amdahl y Gustafson con un i7-1165G7 de 4 núcleos y 8 hilos, en Windows y GCC 10.3. Luis midió suma y desbalance con un i5-12450H de 4 núcleos P y 4 E, 12 hilos lógicos, en WSL2 y GCC 13.3. No se comparan tiempos absolutos entre equipos.
 
-## Estado de los entregables
+Las mediciones de Luis usaron el programa inicial. Los archivos de provenance conservan esas versiones como texto histórico sin comentarios y registran sus hashes. Esos archivos no son los ejecutables actuales. Las nuevas corridas utilizan el código unificado y quedan en build/reproduced, sin reemplazar los CSV originales. La sincronización cambió respecto al programa inicial y puede modificar los tiempos, especialmente para sumas pequeñas.
 
-**resultados_lab12.zip**: listo para generar con `python scripts/armar_resultados_zip.py`
-(los 10 CSV + 4 `*_con_S_E.csv` desde `results/`).
+## Compilar
 
-**7 gráficas de graficar.py**: completas en `results/`
-(`amdahl_speedup`, `amdahl_eficiencia`, `suma_speedup`, `desbalance_speedup`, `desbalance_eficiencia`,
-`gustafson_speedup`, `gustafson_eficiencia`).
+Linux y WSL usan make. Windows con GCC usa mingw32-make. En macOS se puede usar make CC=gcc-14 o clang con libomp. Se requiere Python y matplotlib.
 
-**lab12_speedup.c del reto**: listo en `parte2_3/reto/lab12_speedup.c` (comentado) + 5 corridas.
+```sh
+python scripts/build_variants.py
+python scripts/check_program.py
+python scripts/check_results.py
+python scripts/validate_project.py
+```
 
-**evidencia_lab12.pdf**
-- [x] Partes 2 y 3: `parte2_3/evidencia_parte2_3.pdf` (lscpu, make, suma, los 3 desbalance, gráficas, reto)
-- [ ] Partes 1 y 4: capturas de los datos del equipo de Nina, de su compilación y de las corridas de `amdahl` y `gustafson`
-- [ ] Unir todo en un solo PDF
+El primer comando compila el programa principal y las dos variantes en build. El reto comprueba AVX2 antes de ejecutar y usa reserva alineada compatible con Windows y Linux. La función de suma del reto es la misma en la referencia y en los bloques paralelos.
 
-**reporte_lab12.pdf**
-- [x] Partes 2 y 3: `parte2_3/respuestas_parte2_3.md` (equipo, predicciones contra lo medido, cálculos a mano, respuestas 2a/2b/3, aporte a la síntesis, reto)
-- [ ] Partes 1 y 4: predicciones, tabla de la Parte 1, cálculo a mano de S/E/C/F, respuestas 1.1–1.8 y 4.1–4.5, los dos modelos
-- [ ] Síntesis conjunta (fuga por parte con el número medido + lo que no encaja en las cuatro)
-- [ ] Datos de los dos equipos en el reporte
+## Repetir experimentos
 
-## Ojo al juntar el informe
+```sh
+python scripts/run_experiments.py --parts nina --pmax 8
+python scripts/run_experiments.py --parts luis --pmax 12
+python scripts/run_experiments.py --parts all --pmax 8 --output build/another_run
+```
 
-- **Son dos equipos distintos.** Cada parte se interpreta con el equipo en que se midió (ver tabla
-  de arriba). Ejemplo: la pregunta 3.5 (núcleos P/E) aplica al i5-12450H; el i7-1165G7 no tiene
-  núcleos E.
-- **Dos versiones del código.** Las Partes 2 y 3 se midieron con el `lab12_speedup.c` original del
-  starter; las Partes 1 y 4 con la versión modificada de la raíz. Se verificó que dan los mismos
-  resultados en desbalance y en la suma con N grande. En la suma con N ≤ 1024 la versión
-  modificada es algo más lenta por una barrera extra (sección "Verificación" de
-  `parte2_3/respuestas_parte2_3.md`).
-- **2a usa `amdahl_fp100.csv`.** Las respuestas usan el de Luis (`parte2_3/amdahl_fp100_luis.csv`)
-  para que sea el mismo equipo que la suma, y comparan con el de Nina (`results/amdahl_fp100.csv`).
-  En los dos equipos sale ~0 % de diferencia.
-- **Resolución del reloj.** En Windows nativo los tiempos de las Partes 1 y 4 son múltiplos de 1 ms.
-- **Predicciones.** Cada uno escribió las suyas por separado antes de medir. Las de Luis están en
-  `parte2_3/predicciones_parte2_3.md`.
+Se usa la mediana de cinco repeticiones. La referencia secuencial no contiene OpenMP. Para tamaños pequeños se repite la suma muchas veces y se divide entre ese número de repeticiones. Los logs guardan las muestras de Amdahl y Gustafson y su comparación numérica. Conectar la laptop a corriente, cerrar aplicaciones y evitar usarla durante las corridas. Los datos históricos no tuvieron un aislamiento completo del sistema.
+
+El script graficar.py calcula S=Ts/Tp, E=S/p, C=p*Tp y F=S/C. analyze_models.py genera las comparaciones con los modelos a partir de los datos originales. Las diez salidas originales, las métricas y las siete gráficas principales están completas en results. Las gráficas de modelos y los experimentos adicionales se conservan junto con ellas.
+
+## Empaquetar resultados
+
+```sh
+python scripts/armar_resultados_zip.py
+```
+
+El ZIP contiene los CSV y PNG de ambos equipos, las fuentes compartidas y la información de procedencia. Se pueden agregar archivos adicionales con la opción --include, repetida por cada archivo. El ZIP está excluido de Git.
+
+Los resultados guardados del reto tienen S mayor que p en cinco corridas para 2 y 4 hilos con un arreglo de 2 MiB. Ese efecto no se garantiza en otro equipo. Las diferencias de caché son una explicación posible; no se registraron afinidad ni contadores de hardware para demostrar una causa exclusiva.
