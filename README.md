@@ -46,3 +46,12 @@ python scripts/armar_resultados_zip.py
 El ZIP contiene los CSV y PNG de ambos equipos, las fuentes compartidas y la información de procedencia. Se pueden agregar archivos adicionales con la opción --include, repetida por cada archivo. El ZIP está excluido de Git.
 
 Los resultados guardados del reto tienen S mayor que p en cinco corridas para 2 y 4 hilos con un arreglo de 2 MiB. Ese efecto no se garantiza en otro equipo. Las diferencias de caché son una explicación posible; no se registraron afinidad ni contadores de hardware para demostrar una causa exclusiva.
+
+## Entrega
+
+```sh
+powershell -ExecutionPolicy Bypass -File scripts\capturar_evidencia_windows.ps1
+python scripts/armar_entrega.py
+```
+
+El primer comando se ejecuta en el equipo de Nina. Guarda en evidencia/nina las capturas de los datos del equipo, la compilación, Amdahl y Gustafson, sin modificar results. El segundo arma la carpeta entrega con reporte_lab12.pdf, evidencia_lab12.pdf, resultados_lab12.zip y el lab12_speedup.c del reto, y avisa si falta algo. El archivo del reto que se entrega es docs/reto/lab12_speedup.c, la versión con la que se midió, con los comentarios que pide la guía.
